@@ -39,8 +39,6 @@
 //#include <vtkIdTypeArray.h>
 #include <iostream>
 
-#define VTK_CREATE(type,name) \
-  vtkSmartPointer<type> name = vtkSmartPointer<type>::New()
 
 //
 using namespace std;
@@ -290,24 +288,29 @@ void sortFaces(vector < Face > &v, int &nP){
         }
         v[i].s = nP;
     }
-
-
-
 }
 
 
+void setMidPontInLine(vector <int> edge, vtkXMLUnstructuredGridReader *mesh,
+                      vtkPoints *newPoints){
+
+    double ijPoint0[3], ijPoint1[3];
+
+    mesh->GetOutput()->GetPoint(edge[0],ijPoint0);
+    mesh->GetOutput()->GetPoint(edge[1],ijPoint1);
+    newPoints->SetPoint(edge[2],    0.5 * (ijPoint0[0] + ijPoint1[0]),
+                                    0.5 * (ijPoint0[1] + ijPoint1[1]),
+                                    0.5 * (ijPoint0[2] + ijPoint1[2]));
+}
 
 
 
 int main(int argc, char *argv[])
 {
 
-    string filename = "../output.vtu";
-
-
-    vtkSmartPointer<vtkGenericCell> cell = vtkSmartPointer<vtkGenericCell>::New();
-    vtkSmartPointer<vtkGenericCell> faceCell = vtkSmartPointer<vtkGenericCell>::New();
-    //read all the data from the file
+    string filename = "../test.vtu";
+/*  READING MESH - s */
+    vtkSmartPointer<vtkGenericCell> cell = vtkSmartPointer<vtkGenericCell>::New(); //read all the data from the file
     vtkSmartPointer<vtkXMLUnstructuredGridReader> mesh=
             vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
     mesh->SetFileName(filename.c_str());
@@ -319,8 +322,29 @@ int main(int argc, char *argv[])
     const int nPointsOrig = mesh->GetNumberOfPoints();
     int nPoints = nPointsOrig;
 
-    cout << "nCellsOrig  = " << nCellsOrig << endl;
-    cout << "nPointsOrig = " << nPointsOrig << endl;
+    printf("nCellsOrig  = %15d\n", nCellsOrig);
+    printf("nPointsOrig = %15d\n", nPointsOrig);
+
+/*  READING MESH - e */
+
+
+
+    int nCellsNew0 = nCellsOrig * 8;
+
+    int nCellArr = mesh->GetNumberOfCellArrays();
+    vector <string> vec_CellArraysNames;
+    vector <vtkIntArray *> vec_CellArrays;
+
+
+    for (int i = 0; i < nCellArr ; i++) {
+        vec_CellArraysNames.push_back(mesh->GetCellArrayName(i));
+        printf("%3d:  %s\n", i, vec_CellArraysNames.at(i).c_str());
+        vtkSmartPointer<vtkIntArray> vtkDataArray_ = vtkSmartPointer<vtkIntArray>::New();
+        vec_CellArrays.push_back(vtkDataArray_);
+        vec_CellArrays.back()->SetName("MaterialId");
+        vec_CellArrays.back()->SetNumberOfComponents(1);
+        vec_CellArrays.back()->SetNumberOfTuples(nCellsNew0);
+    }
 
     // only cube considered
     vector < vector < int> > edges;
@@ -431,7 +455,7 @@ int main(int argc, char *argv[])
 
 
     vtkSmartPointer<vtkPoints> newPoints = vtkSmartPointer<vtkPoints>::New();
-    int estim = nCellsOrig * 27;
+    int estim = nPCurrent + nCellsOrig;
     newPoints->SetNumberOfPoints(estim);
 
     int iNew[27];
@@ -443,6 +467,29 @@ int main(int argc, char *argv[])
 // Cell array - connectivity
     vtkSmartPointer<vtkCellArray> cellArray = vtkSmartPointer<vtkCellArray>::New();
 
+
+
+//    vtkSmartPointer<vtkIntArray> _vtkDataArray_MatId = vtkSmartPointer<vtkIntArray>::New();
+//    _vtkDataArray_MatId->SetName("MaterialId");
+//    _vtkDataArray_MatId->SetNumberOfComponents(1);
+//    _vtkDataArray_MatId->SetNumberOfTuples(nCellsNew0);
+//
+//    vtkSmartPointer<vtkIntArray> _vtkDataArray_FormId = vtkSmartPointer<vtkIntArray>::New();
+//    _vtkDataArray_FormId->SetName("FormulationId");
+//    _vtkDataArray_FormId->SetNumberOfComponents(1);
+//    _vtkDataArray_FormId->SetNumberOfTuples(nCellsNew0);
+//
+//    vtkSmartPointer<vtkIntArray> _vtkDataArray_PieceId = vtkSmartPointer<vtkIntArray>::New();
+//    _vtkDataArray_PieceId->SetName("PieceId");
+//    _vtkDataArray_PieceId->SetNumberOfComponents(1);
+//    _vtkDataArray_PieceId->SetNumberOfTuples(nCellsNew0);
+//
+//    vtkSmartPointer<vtkIntArray> _vtkDataArray_PartId = vtkSmartPointer<vtkIntArray>::New();
+//    _vtkDataArray_PartId->SetName("PartitionId");
+//    _vtkDataArray_PartId->SetNumberOfComponents(1);
+//    _vtkDataArray_PartId->SetNumberOfTuples(nCellsNew0);
+
+    double tuple[] = {0};
 
     for (int i = 0; i < nCellsOrig ; i++)
     {
@@ -456,11 +503,13 @@ int main(int argc, char *argv[])
         }
 //      next 12 nodes come from splinting all edges
         iNew[ 8] = edges[12 * i +  0][2];
-        mesh->GetOutput()->GetPoint(edges[12 * i +  0][0],ijPoint0);
-        mesh->GetOutput()->GetPoint(edges[12 * i +  0][1],ijPoint1);
-        newPoints->SetPoint(iNew[8], 0.5 * (ijPoint0[0] + ijPoint1[0]),
-                                        0.5 * (ijPoint0[1] + ijPoint1[1]),
-                                        0.5 * (ijPoint0[2] + ijPoint1[2]));
+        setMidPontInLine(edges[12 * i +  0], mesh, newPoints);
+
+//        mesh->GetOutput()->GetPoint(edges[12 * i +  0][0],ijPoint0);
+//        mesh->GetOutput()->GetPoint(edges[12 * i +  0][1],ijPoint1);
+//        newPoints->SetPoint(iNew[8], 0.5 * (ijPoint0[0] + ijPoint1[0]),
+//                                        0.5 * (ijPoint0[1] + ijPoint1[1]),
+//                                        0.5 * (ijPoint0[2] + ijPoint1[2]));
 
         iNew[ 9] = edges[12 * i +  1][2];
         mesh->GetOutput()->GetPoint(edges[12 * i +  1][0],ijPoint0);
@@ -697,13 +746,21 @@ int main(int argc, char *argv[])
                             {23,26,22,19,15,24,14, 7},
                             {26,21,18,22,24,13, 6,14}};
 
-        int iii;
+
+        // from one parent eight chldren elements
+
+
         for (int j = 0; j < 8; j++)
- //       int j = 1;
         {
+
+            for (int k = 0; k < vec_CellArraysNames.size(); k++){
+        //        vec_CellArraysNames
+        //        vec_CellArrays
+        //        _vtkDataArray_MatId->SetTuple(i, tuple);
+            }
+
             for (int k = 0; k < 8; k++){
-                iii = iNew[ind00[j][k]];
-                hexa->GetPointIds()->SetId(k, iii);
+                hexa->GetPointIds()->SetId(k, iNew[ind00[j][k]]);
             }
             cellArray->InsertNextCell(hexa);
         }
@@ -714,10 +771,10 @@ int main(int argc, char *argv[])
 
     newPoints->SetNumberOfPoints(nPCurrent);
 
-    vtkSmartPointer<vtkUnstructuredGrid> unstructuredGrid =
+    vtkSmartPointer<vtkUnstructuredGrid> finMesh =
         vtkSmartPointer<vtkUnstructuredGrid>::New();
-      unstructuredGrid->SetPoints(newPoints);
-      unstructuredGrid->SetCells(VTK_HEXAHEDRON, cellArray);
+      finMesh->SetPoints(newPoints);
+      finMesh->SetCells(VTK_HEXAHEDRON, cellArray);
 
   vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer =
     vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
@@ -731,17 +788,23 @@ int main(int argc, char *argv[])
     writer->SetDataModeToBinary();
   }
 
+  const int nCellsNew= finMesh->GetNumberOfCells();
+  const int nPointsNew= finMesh->GetNumberOfPoints();
+
+  double prCntEl = double(nCellsNew) / (nCellsOrig);
+  double prCntNd = double(nPointsNew)/ (nPointsOrig);
+
+  printf("nCellsNew   = %15d  (= %3.2f x %d)\n", nCellsNew, prCntEl , nCellsOrig);
+  printf("nPointsNew  = %15d  (= %3.2f x %d)\n", nPointsNew, prCntNd, nPointsOrig);
 
 #if VTK_MAJOR_VERSION <= 5
-  writer->SetInput(unstructuredGrid);
+  writer->SetInput(finMesh);
 #else
-  writer->SetInputData(unstructuredGrid);
+  writer->SetInputData(finMesh);
 #endif
   writer->Write();
 
-    cout << " edg size          :   " << edg.size() << endl;
-    cout << " nCellsOrig * 6 * 4:   " << nCellsOrig * 12 << endl;
-    cout << " nCellsOrig        :   " << nCellsOrig  << endl;
+
 
     return 0;
 
