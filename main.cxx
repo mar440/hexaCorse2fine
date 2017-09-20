@@ -148,7 +148,6 @@ bool compare_b(Line x, Line y){
     return x.b < y.b;
 }
 
-
 bool Fcompare_a(Face x, Face y){
     return x.a < y.a;
 }
@@ -156,7 +155,6 @@ bool Fcompare_a(Face x, Face y){
 bool Fcompare_b(Face x, Face y){
     return x.b < y.b;
 }
-
 
 bool Fcompare_c(Face x, Face y){
     return x.c < y.c;
@@ -203,7 +201,6 @@ void sortLines(vector < Line > &v, int &nP){
         tmpVecIprev = v[i].a;
     }
 
-
     v[0].s = nP;
     for (int i = 1; i < nnz; i++){
         if (v[i-1].a == v[i].a && v[i-1].b == v[i].b){
@@ -216,7 +213,6 @@ void sortLines(vector < Line > &v, int &nP){
     }
     nP++;
 }
-
 
 void sortFaces(vector < Face > &v, int &nP){
     sort(v.begin(),v.end(),Fcompare_a);
@@ -276,7 +272,6 @@ void sortFaces(vector < Face > &v, int &nP){
         tmpVecIprev = v[i].c;
     }
 
-
     v[0].s = nP;
     for (int i = 1; i < nnz; i++){
         if (v[i-1].a == v[i].a && v[i-1].b == v[i].b &&
@@ -290,25 +285,31 @@ void sortFaces(vector < Face > &v, int &nP){
     }
 }
 
+void setMiddPoint(vector <int> &vec, vtkXMLUnstructuredGridReader *mesh,
+                      vtkPoints *newPoints)
+{
+    double ijPoint0[3] = {0,0,0};
+    double ijPoint1[3];
+    int n = vec.size() - 1;
+    for (int i = 0; i < n ; i++){
+        mesh->GetOutput()->GetPoint(vec[i],ijPoint1);
+        ijPoint0[0] += ijPoint1[0];
+        ijPoint0[1] += ijPoint1[1];
+        ijPoint0[2] += ijPoint1[2];
+    }
 
-void setMidPontInLine(vector <int> edge, vtkXMLUnstructuredGridReader *mesh,
-                      vtkPoints *newPoints){
-
-    double ijPoint0[3], ijPoint1[3];
-
-    mesh->GetOutput()->GetPoint(edge[0],ijPoint0);
-    mesh->GetOutput()->GetPoint(edge[1],ijPoint1);
-    newPoints->SetPoint(edge[2],    0.5 * (ijPoint0[0] + ijPoint1[0]),
-                                    0.5 * (ijPoint0[1] + ijPoint1[1]),
-                                    0.5 * (ijPoint0[2] + ijPoint1[2]));
+    double w = 1. / n;
+    newPoints->SetPoint(vec[n], w * ijPoint0[0],
+                                w * ijPoint0[1],
+                                w * ijPoint0[2]);
 }
-
-
 
 int main(int argc, char *argv[])
 {
 
     string filename = "../test.vtu";
+ //   string filename = "../test4_pressure_vessel.vtu";
+
 /*  READING MESH - s */
     vtkSmartPointer<vtkGenericCell> cell = vtkSmartPointer<vtkGenericCell>::New(); //read all the data from the file
     vtkSmartPointer<vtkXMLUnstructuredGridReader> mesh=
@@ -327,14 +328,11 @@ int main(int argc, char *argv[])
 
 /*  READING MESH - e */
 
-
-
     int nCellsNew0 = nCellsOrig * 8;
 
     int nCellArr = mesh->GetNumberOfCellArrays();
     vector <string> vec_CellArraysNames;
     vector <vtkIntArray *> vec_CellArrays;
-
 
     for (int i = 0; i < nCellArr ; i++) {
         vec_CellArraysNames.push_back(mesh->GetCellArrayName(i));
@@ -409,12 +407,7 @@ int main(int argc, char *argv[])
         edges.push_back({i1,i5});
         edges.push_back({i2,i6});
         edges.push_back({i3,i7});
-
     }
-
-
-
-
 
     vector <  Line  > edg;
     edg.resize(edges.size());
@@ -431,10 +424,6 @@ int main(int argc, char *argv[])
         edges[tmp_edg[i].i].push_back(tmp_edg[i].s);
     }
 
-    //printVecVec(edges);
-
-
-
 
     vector <  Face > fc;
     fc.resize(faces.size());
@@ -449,10 +438,6 @@ int main(int argc, char *argv[])
     for (int i = 0; i < faces.size(); i++){
         faces[tmp_fc[i].i].push_back(tmp_fc[i].s);
     }
-
-
-    //printVecVec(faces);
-
 
     vtkSmartPointer<vtkPoints> newPoints = vtkSmartPointer<vtkPoints>::New();
     int estim = nPCurrent + nCellsOrig;
@@ -490,6 +475,7 @@ int main(int argc, char *argv[])
 //    _vtkDataArray_PartId->SetNumberOfTuples(nCellsNew0);
 
     double tuple[] = {0};
+    vector <int> parentElId(9,0);
 
     for (int i = 0; i < nCellsOrig ; i++)
     {
@@ -502,238 +488,21 @@ int main(int argc, char *argv[])
             newPoints->SetPoint(iNew[j],ijPoint0[0],ijPoint0[1],ijPoint0[2]);
         }
 //      next 12 nodes come from splinting all edges
-        iNew[ 8] = edges[12 * i +  0][2];
-        setMidPontInLine(edges[12 * i +  0], mesh, newPoints);
-
-//        mesh->GetOutput()->GetPoint(edges[12 * i +  0][0],ijPoint0);
-//        mesh->GetOutput()->GetPoint(edges[12 * i +  0][1],ijPoint1);
-//        newPoints->SetPoint(iNew[8], 0.5 * (ijPoint0[0] + ijPoint1[0]),
-//                                        0.5 * (ijPoint0[1] + ijPoint1[1]),
-//                                        0.5 * (ijPoint0[2] + ijPoint1[2]));
-
-        iNew[ 9] = edges[12 * i +  1][2];
-        mesh->GetOutput()->GetPoint(edges[12 * i +  1][0],ijPoint0);
-        mesh->GetOutput()->GetPoint(edges[12 * i +  1][1],ijPoint1);
-        newPoints->SetPoint(iNew[9], 0.5 * (ijPoint0[0] + ijPoint1[0]),
-                                        0.5 * (ijPoint0[1] + ijPoint1[1]),
-                                        0.5 * (ijPoint0[2] + ijPoint1[2]));
-
-        iNew[10] = edges[12 * i +  2][2];
-        mesh->GetOutput()->GetPoint(edges[12 * i +  2][0],ijPoint0);
-        mesh->GetOutput()->GetPoint(edges[12 * i +  2][1],ijPoint1);
-        newPoints->SetPoint(iNew[10], 0.5 * (ijPoint0[0] + ijPoint1[0]),
-                                         0.5 * (ijPoint0[1] + ijPoint1[1]),
-                                         0.5 * (ijPoint0[2] + ijPoint1[2]));
-
-        iNew[11] = edges[12 * i +  3][2];
-        mesh->GetOutput()->GetPoint(edges[12 * i +  3][0],ijPoint0);
-        mesh->GetOutput()->GetPoint(edges[12 * i +  3][1],ijPoint1);
-        newPoints->SetPoint(iNew[11], 0.5 * (ijPoint0[0] + ijPoint1[0]),
-                                         0.5 * (ijPoint0[1] + ijPoint1[1]),
-                                         0.5 * (ijPoint0[2] + ijPoint1[2]));
-
-        iNew[12] = edges[12 * i +  4][2];
-        mesh->GetOutput()->GetPoint(edges[12 * i +  4][0],ijPoint0);
-        mesh->GetOutput()->GetPoint(edges[12 * i +  4][1],ijPoint1);
-        newPoints->SetPoint(iNew[12], 0.5 * (ijPoint0[0] + ijPoint1[0]),
-                                         0.5 * (ijPoint0[1] + ijPoint1[1]),
-                                         0.5 * (ijPoint0[2] + ijPoint1[2]));
-
-        iNew[13] = edges[12 * i +  5][2];
-        mesh->GetOutput()->GetPoint(edges[12 * i +  5][0],ijPoint0);
-        mesh->GetOutput()->GetPoint(edges[12 * i +  5][1],ijPoint1);
-        newPoints->SetPoint(iNew[13], 0.5 * (ijPoint0[0] + ijPoint1[0]),
-                                         0.5 * (ijPoint0[1] + ijPoint1[1]),
-                                         0.5 * (ijPoint0[2] + ijPoint1[2]));
-
-        iNew[14] = edges[12 * i +  6][2];
-        mesh->GetOutput()->GetPoint(edges[12 * i +  6][0],ijPoint0);
-        mesh->GetOutput()->GetPoint(edges[12 * i +  6][1],ijPoint1);
-        newPoints->SetPoint(iNew[14], 0.5 * (ijPoint0[0] + ijPoint1[0]),
-                                         0.5 * (ijPoint0[1] + ijPoint1[1]),
-                                         0.5 * (ijPoint0[2] + ijPoint1[2]));
-
-        iNew[15] = edges[12 * i +  7][2];
-        mesh->GetOutput()->GetPoint(edges[12 * i +  7][0],ijPoint0);
-        mesh->GetOutput()->GetPoint(edges[12 * i +  7][1],ijPoint1);
-        newPoints->SetPoint(iNew[15], 0.5 * (ijPoint0[0] + ijPoint1[0]),
-                                         0.5 * (ijPoint0[1] + ijPoint1[1]),
-                                         0.5 * (ijPoint0[2] + ijPoint1[2]));
-
-        iNew[16] = edges[12 * i +  8][2];
-        mesh->GetOutput()->GetPoint(edges[12 * i +  8][0],ijPoint0);
-        mesh->GetOutput()->GetPoint(edges[12 * i +  8][1],ijPoint1);
-        newPoints->SetPoint(iNew[16], 0.5 * (ijPoint0[0] + ijPoint1[0]),
-                                         0.5 * (ijPoint0[1] + ijPoint1[1]),
-                                         0.5 * (ijPoint0[2] + ijPoint1[2]));
-
-        iNew[17] = edges[12 * i +  9][2];
-        mesh->GetOutput()->GetPoint(edges[12 * i +  9][0],ijPoint0);
-        mesh->GetOutput()->GetPoint(edges[12 * i +  9][1],ijPoint1);
-        newPoints->SetPoint(iNew[17], 0.5 * (ijPoint0[0] + ijPoint1[0]),
-                                         0.5 * (ijPoint0[1] + ijPoint1[1]),
-                                         0.5 * (ijPoint0[2] + ijPoint1[2]));
-
-        iNew[18] = edges[12 * i + 10][2];
-        mesh->GetOutput()->GetPoint(edges[12 * i + 10][0],ijPoint0);
-        mesh->GetOutput()->GetPoint(edges[12 * i + 10][1],ijPoint1);
-        newPoints->SetPoint(iNew[18], 0.5 * (ijPoint0[0] + ijPoint1[0]),
-                                         0.5 * (ijPoint0[1] + ijPoint1[1]),
-                                         0.5 * (ijPoint0[2] + ijPoint1[2]));
-
-        iNew[19] = edges[12 * i + 11][2];
-        mesh->GetOutput()->GetPoint(edges[12 * i + 11][0],ijPoint0);
-        mesh->GetOutput()->GetPoint(edges[12 * i + 11][1],ijPoint1);
-        newPoints->SetPoint(iNew[19], 0.5 * (ijPoint0[0] + ijPoint1[0]),
-                                         0.5 * (ijPoint0[1] + ijPoint1[1]),
-                                         0.5 * (ijPoint0[2] + ijPoint1[2]));
-
-//      next 6 nodes come from each face (center)
-        iNew[20] = faces[6 * i +  0][4];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  0][0],ijPoint1);
-        ijPoint0[0] = ijPoint1[0];
-        ijPoint0[1] = ijPoint1[1];
-        ijPoint0[2] = ijPoint1[2];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  0][1],ijPoint1);
-        ijPoint0[0] += ijPoint1[0];
-        ijPoint0[1] += ijPoint1[1];
-        ijPoint0[2] += ijPoint1[2];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  0][2],ijPoint1);
-        ijPoint0[0] += ijPoint1[0];
-        ijPoint0[1] += ijPoint1[1];
-        ijPoint0[2] += ijPoint1[2];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  0][3],ijPoint1);
-        ijPoint0[0] += ijPoint1[0];
-        ijPoint0[1] += ijPoint1[1];
-        ijPoint0[2] += ijPoint1[2];
-        newPoints->SetPoint(iNew[20], 0.25 * ijPoint0[0],
-                                      0.25 * ijPoint0[1],
-                                      0.25 * ijPoint0[2]);
-
-
-        iNew[21] = faces[6 * i +  1][4];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  1][0],ijPoint1);
-        ijPoint0[0] = ijPoint1[0];
-        ijPoint0[1] = ijPoint1[1];
-        ijPoint0[2] = ijPoint1[2];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  1][1],ijPoint1);
-        ijPoint0[0] += ijPoint1[0];
-        ijPoint0[1] += ijPoint1[1];
-        ijPoint0[2] += ijPoint1[2];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  1][2],ijPoint1);
-        ijPoint0[0] += ijPoint1[0];
-        ijPoint0[1] += ijPoint1[1];
-        ijPoint0[2] += ijPoint1[2];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  1][3],ijPoint1);
-        ijPoint0[0] += ijPoint1[0];
-        ijPoint0[1] += ijPoint1[1];
-        ijPoint0[2] += ijPoint1[2];
-        newPoints->SetPoint(iNew[21], 0.25 * ijPoint0[0],
-                                         0.25 * ijPoint0[1],
-                                         0.25 * ijPoint0[2]);
-
-
-        iNew[22] = faces[6 * i +  2][4];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  2][0],ijPoint1);
-        ijPoint0[0] = ijPoint1[0];
-        ijPoint0[1] = ijPoint1[1];
-        ijPoint0[2] = ijPoint1[2];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  2][1],ijPoint1);
-        ijPoint0[0] += ijPoint1[0];
-        ijPoint0[1] += ijPoint1[1];
-        ijPoint0[2] += ijPoint1[2];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  2][2],ijPoint1);
-        ijPoint0[0] += ijPoint1[0];
-        ijPoint0[1] += ijPoint1[1];
-        ijPoint0[2] += ijPoint1[2];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  2][3],ijPoint1);
-        ijPoint0[0] += ijPoint1[0];
-        ijPoint0[1] += ijPoint1[1];
-        ijPoint0[2] += ijPoint1[2];
-        newPoints->SetPoint(iNew[22], 0.25 * ijPoint0[0],
-                                         0.25 * ijPoint0[1],
-                                         0.25 * ijPoint0[2]);
-
-
-        iNew[23] = faces[6 * i +  3][4];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  3][0],ijPoint1);
-        ijPoint0[0] = ijPoint1[0];
-        ijPoint0[1] = ijPoint1[1];
-        ijPoint0[2] = ijPoint1[2];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  3][1],ijPoint1);
-        ijPoint0[0] += ijPoint1[0];
-        ijPoint0[1] += ijPoint1[1];
-        ijPoint0[2] += ijPoint1[2];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  3][2],ijPoint1);
-        ijPoint0[0] += ijPoint1[0];
-        ijPoint0[1] += ijPoint1[1];
-        ijPoint0[2] += ijPoint1[2];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  3][3],ijPoint1);
-        ijPoint0[0] += ijPoint1[0];
-        ijPoint0[1] += ijPoint1[1];
-        ijPoint0[2] += ijPoint1[2];
-        newPoints->SetPoint(iNew[23], 0.25 * ijPoint0[0],
-                                         0.25 * ijPoint0[1],
-                                         0.25 * ijPoint0[2]);
-
-
-        iNew[24] = faces[6 * i +  4][4];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  4][0],ijPoint1);
-        ijPoint0[0] = ijPoint1[0];
-        ijPoint0[1] = ijPoint1[1];
-        ijPoint0[2] = ijPoint1[2];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  4][1],ijPoint1);
-        ijPoint0[0] += ijPoint1[0];
-        ijPoint0[1] += ijPoint1[1];
-        ijPoint0[2] += ijPoint1[2];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  4][2],ijPoint1);
-        ijPoint0[0] += ijPoint1[0];
-        ijPoint0[1] += ijPoint1[1];
-        ijPoint0[2] += ijPoint1[2];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  4][3],ijPoint1);
-        ijPoint0[0] += ijPoint1[0];
-        ijPoint0[1] += ijPoint1[1];
-        ijPoint0[2] += ijPoint1[2];
-        newPoints->SetPoint(iNew[24], 0.25 * ijPoint0[0],
-                                         0.25 * ijPoint0[1],
-                                         0.25 * ijPoint0[2]);
-
-
-        iNew[25] = faces[6 * i +  5][4];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  5][0],ijPoint1);
-        ijPoint0[0] = ijPoint1[0];
-        ijPoint0[1] = ijPoint1[1];
-        ijPoint0[2] = ijPoint1[2];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  5][1],ijPoint1);
-        ijPoint0[0] += ijPoint1[0];
-        ijPoint0[1] += ijPoint1[1];
-        ijPoint0[2] += ijPoint1[2];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  5][2],ijPoint1);
-        ijPoint0[0] += ijPoint1[0];
-        ijPoint0[1] += ijPoint1[1];
-        ijPoint0[2] += ijPoint1[2];
-        mesh->GetOutput()->GetPoint(faces[6 * i +  5][3],ijPoint1);
-        ijPoint0[0] += ijPoint1[0];
-        ijPoint0[1] += ijPoint1[1];
-        ijPoint0[2] += ijPoint1[2];
-        newPoints->SetPoint(iNew[25], 0.25 * ijPoint0[0],
-                                         0.25 * ijPoint0[1],
-                                         0.25 * ijPoint0[2]);
-
-
-//      next 1 node comes from center of parent element
-        iNew[26] = nPCurrent;
-
-        ijPoint0[0] = 0; ijPoint0[1] = 0; ijPoint0[2] = 0;
-        for (int j = 0; j < 8; j++ ){
-            mesh->GetOutput()->GetPoint(iNew[j],ijPoint1);
-            ijPoint0[0] += ijPoint1[0];
-            ijPoint0[1] += ijPoint1[1];
-            ijPoint0[2] += ijPoint1[2];
+        for (int k = 0; k < 12; k++){
+            iNew[ 8 + k] = edges[12 * i +  k][2];
+            setMiddPoint(edges[12 * i +  k], mesh, newPoints);
         }
-        newPoints->SetPoint(iNew[26], 0.125 * ijPoint0[0],
-                                         0.125 * ijPoint0[1],
-                                         0.125 * ijPoint0[2]);
+//      next 6 nodes come from each face (center)
+        for (int k = 0; k < 6; k++){
+            iNew[20 + k] = faces[6 * i +  k][4];
+            setMiddPoint(faces[6 * i +  k], mesh, newPoints);
+        }
+//      last node is the (node) center of the parent element
+        iNew[26] = nPCurrent;
+        for (int k = 0; k < 8; k++) parentElId[k] = iNew[k];
+        parentElId[8] = iNew[26];
+        setMiddPoint(parentElId, mesh, newPoints);
+
         nPCurrent++;
 
 
@@ -773,38 +542,45 @@ int main(int argc, char *argv[])
 
     vtkSmartPointer<vtkUnstructuredGrid> finMesh =
         vtkSmartPointer<vtkUnstructuredGrid>::New();
-      finMesh->SetPoints(newPoints);
-      finMesh->SetCells(VTK_HEXAHEDRON, cellArray);
+    finMesh->SetPoints(newPoints);
+    finMesh->SetCells(VTK_HEXAHEDRON, cellArray);
 
-  vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer =
-    vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
-  writer->SetFileName("../output.vtu");
 
-  bool asciiOrBinaryVtu = false;
-  if (asciiOrBinaryVtu){
-    writer->SetDataModeToAscii();
-  }
-  else{
-    writer->SetDataModeToBinary();
-  }
+//    for (int i = 0; i < nCellArr ; i++) {
+//        finMesh->GetCellData()->AddArray(vec_CellArrays[i]);
+//    }
 
-  const int nCellsNew= finMesh->GetNumberOfCells();
-  const int nPointsNew= finMesh->GetNumberOfPoints();
 
-  double prCntEl = double(nCellsNew) / (nCellsOrig);
-  double prCntNd = double(nPointsNew)/ (nPointsOrig);
 
-  printf("nCellsNew   = %15d  (= %3.2f x %d)\n", nCellsNew, prCntEl , nCellsOrig);
-  printf("nPointsNew  = %15d  (= %3.2f x %d)\n", nPointsNew, prCntNd, nPointsOrig);
+
+
+    vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer =
+        vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
+    writer->SetFileName("../output.vtu");
+
+    bool asciiOrBinaryVtu = true;
+    if (asciiOrBinaryVtu){
+      writer->SetDataModeToAscii();
+    }
+    else{
+      writer->SetDataModeToBinary();
+    }
+
+    const int nCellsNew= finMesh->GetNumberOfCells();
+    const int nPointsNew= finMesh->GetNumberOfPoints();
+
+    double prCntEl = double(nCellsNew) / (nCellsOrig);
+    double prCntNd = double(nPointsNew)/ (nPointsOrig);
+
+    printf("nCellsNew   = %15d  (= %3.2f x %d)\n", nCellsNew, prCntEl , nCellsOrig);
+    printf("nPointsNew  = %15d  (= %3.2f x %d)\n", nPointsNew, prCntNd, nPointsOrig);
 
 #if VTK_MAJOR_VERSION <= 5
-  writer->SetInput(finMesh);
+    writer->SetInput(finMesh);
 #else
-  writer->SetInputData(finMesh);
+    writer->SetInputData(finMesh);
 #endif
-  writer->Write();
-
-
+    writer->Write();
 
     return 0;
 
