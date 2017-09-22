@@ -39,6 +39,7 @@
 //#include <vtkIdTypeArray.h>
 #include <iostream>
 
+//#define DBG_PRINT
 
 //
 using namespace std;
@@ -340,16 +341,6 @@ int main(int argc, char *argv[])
     }
 
 
-
-
-
-
-
-
-
-
-
-
 /*  READING MESH - s */
 
     vtkSmartPointer<vtkGenericCell> cell = vtkSmartPointer<vtkGenericCell>::New(); //read all the data from the file
@@ -408,6 +399,9 @@ int main(int argc, char *argv[])
         int i6 = cell->GetPointId(6);
         int i7 = cell->GetPointId(7);
 
+//
+//      PARENT ELEMENT
+//
 //          7-------6
 //       4------5   :
 //       :  :   :   :
@@ -464,7 +458,9 @@ int main(int argc, char *argv[])
     vector <  Line  > tmp_edg= edg;
     int nPCurrent = nPointsOrig;
     sortLines(tmp_edg,nPCurrent);
+#ifdef DBG_PRINT
     printLines(tmp_edg);
+#endif
 
 
     for (int i = 0; i < edges.size(); i++){
@@ -479,7 +475,9 @@ int main(int argc, char *argv[])
     }
     vector <  Face > tmp_fc= fc;
     sortFaces(tmp_fc,nPCurrent);
+#ifdef DBG_PRINT
     printFaces(tmp_fc);
+#endif
 
 
     for (int i = 0; i < faces.size(); i++){
@@ -524,11 +522,13 @@ int main(int argc, char *argv[])
         }
 //      last node is the (node) center of the parent element
         iNew[26] = nPCurrent;
-        cout << "middle point: " << nPCurrent << endl;
         for (int k = 0; k < 8; k++)
             parentElId[k] = iNew[k];
         parentElId[8] = iNew[26];
         setMiddPoint(parentElId, mesh, newPoints);
+#ifdef DBG_PRINT
+        cout << nPCurrent << endl;
+#endif
 
         nPCurrent++;
 
