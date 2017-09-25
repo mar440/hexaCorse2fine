@@ -318,27 +318,27 @@ int main(int argc, char *argv[])
 //    string filename = "../test.vtu";
 
 
-    if (argc != 3){
+    if (argc != 2){
         cout << "!!!  Number of arguments is incorrect !!!\n" << endl;
         string str0 = "/path/to/mesh.vtu";
-        cout << "To refine the mesh (stored in "<< str0 <<") into, e.g., " <<
-                "2 level, call:\n\n\n \t\t\t./c2f      "<<str0<< " 2\n\n\n";
+//        cout << "To refine the mesh (stored in "<< str0 <<") into, e.g., " <<
+//                "2 level, call:\n\n\n \t\t\t./c2f      "<<str0<< " 2\n\n\n";
         return 0;
     }
 
     string filename = argv[1];
-    string _nparts_str = argv[2];
+//    string _nparts_str = argv[2];
 
-    int _nparts = stoi(_nparts_str);
+//    int _nparts = stoi(_nparts_str);
 
     cout << "numb. of inp.             " << argc << endl;
     cout << "file name to be readed is " << filename << endl;
-    cout << "level of refinement     : " << _nparts << endl;
+//    cout << "level of refinement     : " << _nparts << endl;
 
-    int nparts;
-    if (_nparts > 0 ){
-       nparts = _nparts;
-    }
+//    int nparts;
+//    if (_nparts > 0 ){
+//       nparts = _nparts;
+//    }
 
 
 /*  READING MESH - s */
