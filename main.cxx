@@ -570,7 +570,7 @@ int main(int argc, char *argv[])
 
     vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer =
         vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
-    writer->SetFileName("../output.vtu");
+    writer->SetFileName("output.vtu");
 
     bool asciiOrBinaryVtu = true;
     if (asciiOrBinaryVtu){
