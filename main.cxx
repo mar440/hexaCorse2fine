@@ -570,7 +570,36 @@ int main(int argc, char *argv[])
 
     vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer =
         vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
-    writer->SetFileName("output.vtu");
+
+   // ---------------------------------
+    /* Extraction of original file name from the 'path'*/
+    stringstream ss1(filename);
+    vector <string> result;
+
+    while (ss1.good() )
+    {
+        string substr;
+        getline (ss1, substr, '/');
+        result.push_back( substr );
+    }
+
+    stringstream ss2(result[result.size() - 1]);
+    result.clear();
+    result.shrink_to_fit();
+
+    while (ss2.good() )
+    {
+        string substr;
+        getline (ss2, substr, '.');
+        result.push_back( substr );
+    }
+    cout << result.size() << endl;
+    cout << result[0]<< endl;
+   // ---------------------------------
+
+
+    string fname = result[0] + "_ref.vtu";
+    writer->SetFileName(fname.c_str());
 
     bool asciiOrBinaryVtu = true;
     if (asciiOrBinaryVtu){
