@@ -24,7 +24,6 @@
 #include <algorithm>
 #include <string>
 
-
 // To extract a sub part
 #include <vtkThreshold.h>
 #include <vtkSelection.h>
@@ -35,13 +34,11 @@
 #include <vtkAppendFilter.h>
 #include <set>
 #include <stdexcept>
-#include <vtkConnectivityFilter.h>
-//#include <vtkIdTypeArray.h>
+#include <vtkConnectivityFilter.h> 
 #include <iostream>
 
 //#define DBG_PRINT
-
-//
+ 
 using namespace std;
 
 const int ind00[8][8] = { { 0, 8,25,11,16,20,26,23},
@@ -52,7 +49,6 @@ const int ind00[8][8] = { { 0, 8,25,11,16,20,26,23},
                           {20,17,21,26,12, 5,13,24},
                           {23,26,22,19,15,24,14, 7},
                           {26,21,18,22,24,13, 6,14}};
-
 
 void printVecVec(vector < vector < int> > &v){
 
@@ -68,17 +64,12 @@ void printVecVec(vector < vector < int> > &v){
 class Line
 {
     public:
-        int a;  // first point
-        int b;  // second point
-        int i;  // order number
-        int s;
+		int a, b, i, s;
         bool reverted;
         void setVal(int,int,int);
-
         Line();
         Line(int,int,int);
         ~Line();
-
 };
 
 void Line::setVal(int i_, int a_, int b_) {
@@ -106,73 +97,27 @@ Line::Line(int i_, int a_, int b_){
 
 Line::~Line(){
 }
-
-// -------------------------------------------
+ 
 class Face
 {
     public:
-        int a;
-        int b;
-        int c;
-        int d;
-        int i;
-        int s;
+		int a, b, c, d, i, s;
         bool reverted;
         void setVal(int,int,int,int,int);
-
-        Face();
-        Face(int,int,int,int,int);
-        ~Face();
-
+		Face(){}
+		Face::Face(int i_, int a_, int b_, int c_, int d_):i(i_), a(a_), b(b_), c(c_), d(d_),s(0){}
+		~Face(){};
 };
 
 void Face::setVal(int i_, int a_, int b_, int c_, int d_) {
     this->i = i_;
     this->s = 0;
-
-    vector <int> v_({a_,b_,c_,d_});
-//    sort(v_.begin(),v_.end());
-
-    this->a = v_[0];
-    this->b = v_[1];
-    this->c = v_[2];
-    this->d = v_[3];
-
+	this->a = a_; 
+	this->b = b_;
+	this->c = c_;
+	this->d = d_;
 }
 
-Face::Face(){
-}
-
-Face::Face(int i_, int a_, int b_, int c_, int d_){
-    Face::setVal(i_,a_,b_,c_,d_);
-}
-
-Face::~Face(){
-}
-
-
-bool compare_a(Line x, Line y){
-    return x.a < y.a;
-}
-bool compare_b(Line x, Line y){
-    return x.b < y.b;
-}
-
-bool Fcompare_a(Face x, Face y){
-    return x.a < y.a;
-}
-
-bool Fcompare_b(Face x, Face y){
-    return x.b < y.b;
-}
-
-bool Fcompare_c(Face x, Face y){
-    return x.c < y.c;
-}
-
-bool Fcompare_d(Face x, Face y){
-    return x.d < y.d;
-}
 
 void printLines(vector <Line> x){
     for (int i = 0; i < x.size(); i++){
@@ -190,12 +135,15 @@ void printFaces(vector <Face> x){
     }
 }
 
+
+
 void sortLines(vector < Line > &v, int &nP){
-    sort(v.begin(),v.end(),compare_a);
+	sort(v.begin(), v.end(),
+		[](const Line &x, const Line &y){return x.a < y.a; });
 
     int startInd = 0, endInd = 1;
     int tmpVecIprev = v[0].a;
-    int nnz = v.size();
+    int nnz = static_cast<int>(v.size());
     for (int i = 1 ; i < nnz; i ++){
         if (v[i].a == tmpVecIprev){
             endInd++;
@@ -204,7 +152,8 @@ void sortLines(vector < Line > &v, int &nP){
                  i == nnz - 1))
         {
             sort(v.begin() + startInd,
-                              v.begin() + (endInd  ),compare_b);
+				v.begin() + (endInd),
+				[](const Line &x, const Line &y){return x.b < y.b; });
             startInd = i;
             endInd = i + 1;
         }
@@ -225,11 +174,12 @@ void sortLines(vector < Line > &v, int &nP){
 }
 
 void sortFaces(vector < Face > &v, int &nP){
-    sort(v.begin(),v.end(),Fcompare_a);
+	sort(v.begin(), v.end(),
+		[](const Face &x, const Face &y){return x.a < y.a; });
 
     int startInd = 0, endInd = 1;
     int tmpVecIprev = v[0].a;
-    int nnz = v.size();
+    int nnz = static_cast<int>(v.size());
     for (int i = 1 ; i < nnz; i ++){
         if (v[i].a == tmpVecIprev){
             endInd++;
@@ -238,7 +188,8 @@ void sortFaces(vector < Face > &v, int &nP){
                  i == nnz - 1))
         {
             sort(v.begin() + startInd,
-                              v.begin() + (endInd  ),Fcompare_b);
+				v.begin() + (endInd),
+				[](const Face &x, const Face &y){return x.b < y.b; });
             startInd = i;
             endInd = i + 1;
         }
@@ -257,7 +208,8 @@ void sortFaces(vector < Face > &v, int &nP){
                  i == nnz - 1))
         {
             sort(v.begin() + startInd,
-                              v.begin() + (endInd  ),Fcompare_c);
+				v.begin() + (endInd),
+				[](const Face &x, const Face &y){return x.c < y.c; });
             startInd = i;
             endInd = i + 1;
         }
@@ -274,8 +226,9 @@ void sortFaces(vector < Face > &v, int &nP){
         if (v[i].c != tmpVecIprev || (v[i].c == tmpVecIprev &&
                  i == nnz - 1))
         {
-            sort(v.begin() + startInd,
-                              v.begin() + (endInd  ),Fcompare_d);
+			sort(v.begin() + startInd,
+				v.begin() + (endInd),
+				[](const Face &x, const Face &y){return x.d < y.d; });
             startInd = i;
             endInd = i + 1;
         }
@@ -301,7 +254,7 @@ void setMiddPoint(vector <int> &vec, vtkXMLUnstructuredGridReader *mesh,
 {
     double ijPoint0[3] = {0,0,0};
     double ijPoint1[3];
-    int n = vec.size() - 1;
+    int n = static_cast<int>(vec.size()) - 1;
     for (int i = 0; i < n ; i++){
         mesh->GetOutput()->GetPoint(vec[i],ijPoint1);
         ijPoint0[0] += ijPoint1[0];
@@ -317,29 +270,20 @@ int main(int argc, char *argv[])
 {
 //    string filename = "../test.vtu";
 
+	cout << " *** " << endl;
+	cout << argv[0] << endl;
+	cout << " *** " << endl;
 
     if (argc != 2){
         cout << "!!!  Number of arguments is incorrect !!!\n" << endl;
-        string str0 = "/path/to/mesh.vtu";
-//        cout << "To refine the mesh (stored in "<< str0 <<") into, e.g., " <<
-//                "2 level, call:\n\n\n \t\t\t./c2f      "<<str0<< " 2\n\n\n";
+        string str0 = "/path/to/mesh.vtu"; 
         return 0;
     }
 
-    string filename = argv[1];
-//    string _nparts_str = argv[2];
-
-//    int _nparts = stoi(_nparts_str);
+    string filename = argv[1]; 
 
     cout << "numb. of inp.             " << argc << endl;
-    cout << "file name to be readed is " << filename << endl;
-//    cout << "level of refinement     : " << _nparts << endl;
-
-//    int nparts;
-//    if (_nparts > 0 ){
-//       nparts = _nparts;
-//    }
-
+    cout << "file name to be readed is " << filename << endl; 
 
 /*  READING MESH - s */
 
@@ -363,10 +307,7 @@ int main(int argc, char *argv[])
         vtkSmartPointer<vtkUnstructuredGrid>::New();
 
     int nCellArr = mesh->GetNumberOfCellArrays();
-
-
-
-    for (int i = 0; i < nCellArr ; i++) {
+	for (int i = 0; i < nCellArr ; i++) {
         vtkSmartPointer<vtkIntArray> vtkDataArray_ =
                         vtkSmartPointer<vtkIntArray>::New();
         vtkDataArray_->SetName(mesh->GetCellArrayName(i));
@@ -374,14 +315,8 @@ int main(int argc, char *argv[])
         vtkDataArray_->SetNumberOfTuples(nCellsNew0);
 
         finMesh->GetCellData()->AddArray(vtkDataArray_);
-
-
-    }
-
-
-
-
-
+		 
+    }  
     // only cube considered
     vector < vector < int> > edges;
     vector < vector < int> > faces;
@@ -397,18 +332,17 @@ int main(int argc, char *argv[])
         int i4 = cell->GetPointId(4);
         int i5 = cell->GetPointId(5);
         int i6 = cell->GetPointId(6);
-        int i7 = cell->GetPointId(7);
-
+        int i7 = cell->GetPointId(7); 
 //
 //      PARENT ELEMENT
 //
-//          7-------6
-//       4------5   :
-//       :  :   :   :
-//       :  :   :   :
-//       :  3---:---2
-//       0------1
-
+//         7______6
+//       4/_____5/|
+//       | :    | |
+//       | :    | |
+//       | 3....|.|2
+//       |______|/
+//		 0      1 
         vector <int> v_({i0,i1,i5,i4});
         sort(v_.begin(),v_.end());
         faces.push_back(v_);
@@ -530,12 +464,10 @@ int main(int argc, char *argv[])
         cout << nPCurrent << endl;
 #endif
 
-        nPCurrent++;
+        nPCurrent++; 
 
 
-
-
-        // from one parent eight chldren elements
+        // one parent element -> eight children elements
 
 
         tuple[0] = 0;
@@ -544,8 +476,7 @@ int main(int argc, char *argv[])
             for (int k = 0; k < nCellArr; k++){
                 string str0 = mesh->GetCellArrayName(k);
                 tuple[0] = mesh->GetOutput()->GetCellData()->GetArray(str0.c_str())->GetTuple1(i);
-                finMesh->GetCellData()->GetArray(str0.c_str())->SetTuple(8 * i + j, tuple);
-//                vec_CellArrays[k]->SetTuple(8 * i + j, tuple);
+                finMesh->GetCellData()->GetArray(str0.c_str())->SetTuple(8 * i + j, tuple); 
             }
             for (int k = 0; k < 8; k++){
                 hexa->GetPointIds()->SetId(k, iNew[ind00[j][k]]);
@@ -553,25 +484,18 @@ int main(int argc, char *argv[])
             cellArray->InsertNextCell(hexa);
         }
     }
-
-
+	 
 
     int del0 = estim - nPCurrent;
     if (del0 != 0){
         cout << "control of number of ponts: estim - nPCurrent = " << del0 <<  endl;
     }
     finMesh->SetPoints(newPoints);
-    finMesh->SetCells(VTK_HEXAHEDRON, cellArray);
-
-
-
-
-
+    finMesh->SetCells(VTK_HEXAHEDRON, cellArray); 
 
     vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer =
         vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
-
-   // ---------------------------------
+	 
     /* Extraction of original file name from the 'path'*/
     stringstream ss1(filename);
     vector <string> result;
