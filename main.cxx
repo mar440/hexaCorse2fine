@@ -105,7 +105,7 @@ class Face
         bool reverted;
         void setVal(int,int,int,int,int);
 		Face(){}
-		Face::Face(int i_, int a_, int b_, int c_, int d_):i(i_), a(a_), b(b_), c(c_), d(d_),s(0){}
+		Face(int i_, int a_, int b_, int c_, int d_):i(i_), a(a_), b(b_), c(c_), d(d_),s(0){}
 		~Face(){};
 };
 
